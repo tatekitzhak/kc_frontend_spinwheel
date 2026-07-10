@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  front_end_app:
+    container_name: front_end_kc # Matches the hostname in Central Proxy
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: "front_end_kc_img:v1.0"
+    # REMOVED ports: - "4000:443"
+    env_file:
+      - .env
+    networks:
+      - kc_shared_central_nginx_proxy_network
+
+networks:
+  kc_shared_central_nginx_proxy_network:
+    external: true

@@ -1,0 +1,36 @@
+# Default server configuration
+server {
+    # Listen on plain HTTP port 80 inside the internal docker network
+    listen 80 default_server;
+    listen [::]:80 default_server ipv6only=on;
+    server_name _; 
+
+    # Path to your application files
+    root /var/www/html;
+    index index.html index.htm;
+
+    location / {
+        # Try to serve the static file, fall back to index.html for SPA routing, or 404
+        try_files $uri $uri/ /index.html =404;
+    }
+
+    # redirect server error pages to the static page /50x.html
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    # Pass requests for dynamic content/healthcheck
+    set $html_page "<!DOCTYPE html> <html> <body> <h1>Hello, This is healthcheck!</h1> <h2>This is an example Web App running on Docker and NGINX.</h2> Host: ${host}</p> <p>URL: ${request_uri}</p> <p>URI: ${uri}</p> <p>Remote Addr: ${remote_addr}</p></body> </html>"; 
+
+    location /nginx_health {
+        default_type text/html;
+        return 200 $html_page;
+    }
+
+    # Optional: To cache static assets (CSS, JS, images)
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, must-revalidate";
+    }
+}
