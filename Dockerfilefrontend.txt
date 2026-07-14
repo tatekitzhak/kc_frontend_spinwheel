@@ -1,0 +1,31 @@
+FROM ubuntu/nginx
+
+EXPOSE 80 443
+WORKDIR /app
+
+RUN apt-get  update -y && \
+    apt-get  install vim -y && \
+    apt-get  install -y iputils-ping && \
+    apt-get install -y curl
+
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+RUN export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+RUN nvm install 20 
+RUN nvm use 20 
+RUN nvm alias default 20
+
+RUN rm -rf node_modules package-lock.json
+RUN npm install
+RUN npm run build
+
+COPY . /app
+COPY ./dist /var/www/html
+
+RUN rm -f /etc/nginx/sites-enabled/default
+
+COPY ./nginx/config/default /etc/nginx/sites-enabled/default
+COPY ./nginx/config/nginx.conf /etc/nginx/
+

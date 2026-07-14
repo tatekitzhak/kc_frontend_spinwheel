@@ -1,18 +1,43 @@
+# ==========================================
+# STAGE 1: Build the Node.js application
+# ==========================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files first to leverage Docker layer caching
+COPY package*.json ./
+
+# Clean previous installations, install dependencies, and build
+RUN rm -rf node_modules package-lock.json && \
+    npm install
+
+# Copy the rest of your application code
+COPY . .
+
+# Run the build command (creates the /app/dist directory)
+RUN npm run build
+
+
+# ==========================================
+# STAGE 2: Serve the application with Nginx
+# ==========================================
 FROM ubuntu/nginx
 
 EXPOSE 80 443
 WORKDIR /app
 
-COPY ./dist /var/www/html
+# Copy the compiled assets from the builder stage
+COPY --from=builder /app/dist /var/www/html
 
-RUN apt update -y && \
-    apt install vim -y && \
-    apt install -y iputils-ping
+# Install debugging/networking tools
+RUN apt-get update -y && \
+    apt-get install -y vim iputils-ping && \
+    rm -rf /var/lib/apt/lists/*
 
+# Clean up default Nginx configuration
 RUN rm -f /etc/nginx/sites-enabled/default
-# COPY ./nginx/config/default /etc/nginx/sites-available/
 
-
+# Copy your custom Nginx configurations
 COPY ./nginx/config/default /etc/nginx/sites-enabled/default
 COPY ./nginx/config/nginx.conf /etc/nginx/
-

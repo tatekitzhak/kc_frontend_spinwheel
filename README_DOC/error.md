@@ -1,179 +1,68 @@
-what are differences between central-proxy/nginx.conf and front-end/nginx.conf? 
-Should I delete the:
+This is my Dockerfile, update and modify by following informations:
 
-nginx.conf:
+rm -rf node_modules package-lock.json
+npm install
+npm run build
 
-user www-data;
-worker_processes auto;
-worker_cpu_affinity auto;
-pid /run/nginx.pid;
-error_log /var/log/nginx/error.log;
-include /etc/nginx/modules-enabled/*.conf;
 
-events {
-        worker_connections 768;
-        # multi_accept on;
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+COPY . .
+COPY package.json ./
+
+EXPOSE 3000
+
+CMD ["node", "build/index.js"]
+
+informations application: node.js express. typescript 
+
+{
+  "name": "typescript-expressjs-web-app",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "build/index.js",
+  "types": "build/index.js",
+  "scripts": {
+    "build": "rimraf ./build && tsc",
+    "start:dev": "NODE_ENV=development nodemon --exec node --loader ts-node/esm src/index.ts",
+    "start:stage": "nodemon --exec node --loader ts-node/esm src/index.ts",
+    "start": "npm run build",
+    "start:prod": "node build/index.js",
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.19.39",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jest": "^27.9.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "run-script-os": "^1.1.6",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.15.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "jose": "^6.2.2",
+    "mongodb": "^6.12.0"
+  }
 }
-
-http {
-
-        ##
-        # Basic Settings
-        ##
-
-        sendfile on;
-        tcp_nopush on;
-        types_hash_max_size 2048;
-        server_tokens build; # Recommended practice is to turn this off
-
-        # server_names_hash_bucket_size 64;
-        # server_name_in_redirect off;
-
-        include /etc/nginx/mime.types;
-        default_type application/octet-stream;
-
-        ##
-        # SSL Settings
-        ##
-
-        ssl_protocols TLSv1.2 TLSv1.3; # Dropping SSLv3 (POODLE), TLS 1.0, 1.1
-        ssl_prefer_server_ciphers off; # Don't force server cipher order.
-
-        ##
-        # Logging Settings
-        ##
-
-        log_format debug_format 'Host: $host | URI: $uri | Remote Addr: $remote_addr';
-
-        # Apply it globally or inside a specific server block
-        access_log /var/log/nginx/access.log debug_format;
-
-        ##
-        # Gzip Settings
-        ##
-
-        gzip on;
-
-        # gzip_vary on;
-        # gzip_proxied any;
-        # gzip_comp_level 6;
-        # gzip_buffers 16 8k;
-        # gzip_http_version 1.1;
-        # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-        map $host $domain_name {
-            default "";
-        }
-
-        upstream backend {
-            #zone upstreams 64K;
-            server localhost:3000;
-            #keepalive 2;
-        }
-
-        ##
-        # Virtual Host Configs
-        ##
-
-        include /etc/nginx/conf.d/*.conf;
-        include /etc/nginx/sites-enabled/*;
-}
-
-and also:
-
-server {
-        listen 80 default_server;
-        listen [::]:80 default_server ipv6only=on;
-        server_name _; # your-domain-or-ip
-        
-        # Redirect all traffic to HTTPS
-        return 301 https://$host$request_uri;
-    }
-
-server {
-	
-	# SSL configuration
-
-	listen 443 ssl default_server;
-	listen [::]:443 ssl default_server ipv6only=on;
-    server_name _;
-
-    # ===== Start of certificate configuration ========
-    ssl_certificate     /etc/nginx/ssl/prod/localhost.crt;
-    ssl_certificate_key /etc/nginx/ssl/prod/localhost.key;
-
-	# Configure the SSL session cache to improve performance.
-    ssl_session_cache shared:SSL:1m;
-    # Set the SSL session timeout period.
-    ssl_session_timeout 5m;
-    # Customize the TLS protocol types and cipher suites to use (the following is an example configuration; evaluate whether you need to configure it).
-    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
-    # Specify the allowed TLS protocol versions. Higher TLS versions provide better security for HTTPS communication, but have poorer browser compatibility than lower TLS versions.
-    ssl_protocols TLSv1.2 TLSv1.3;
-    # Prioritize the cipher suites specified by the server.
-    ssl_prefer_server_ciphers on;
-    # ======================= End of certificate configuration =======================
-
-
-	# Self signed certs generated by the ssl-cert package
-	# Don't use them in a production server!
-	#
-	# include snippets/snakeoil.conf;
-
-    # Path to your application files
-	root /var/www/html;
-    # root /usr/share/nginx/html;  
-
-	index index.html index.htm index.nginx-debian.html;
-
-	location / {
-		# First attempt to serve request as file,
-        # NGINX will look for a file matching the path defined by 
-        # root directive plus the requested $uri (e.g., /var/www/html/index.html), 
-		# as directory, then fall back to displaying a 404.
-		try_files $uri $uri/ =404;
-	}
-
-
-	# redirect server error pages to the static page /50x.html
-    #
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root   /usr/share/nginx/html;
-    }
-
-     #pass requests for dynamic content to rails/turbogears/zope, et al
-    set $html_page "<!DOCTYPE html> <html> <body> <h1>Hello, This is healthcheck!</h1> <h2>This is an example Web App running on Docker and NGINX.</h2> Host: ${host}</p> <p>URL: ${request_uri}</p> <p>URI: ${uri}</p> <p>Remote Addr: ${remote_addr}</p></body> </html>"; 
-
-    location /nginx_health {
-        default_type text/html;
-        return 200 $html_page;
-    }
-
-    # Optional: To cache static assets (CSS, JS, images)
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1y;
-        add_header Cache-Control "public, must-revalidate";
-    }
-}
-
-
-Dockerfile.frontend
-
-FROM ubuntu/nginx
-
-EXPOSE 80 443
-WORKDIR /app
-
-COPY ./dist /var/www/html
-
-RUN apt update -y && \
-    apt install vim -y && \
-    apt install -y iputils-ping
-
-COPY ./nginx/config/default /etc/nginx/sites-available/
-COPY ./nginx/config/nginx.conf /etc/nginx/
-
-RUN mkdir -p /etc/nginx/ssl/prod
-COPY ./nginx/certs/localhost.* /etc/nginx/ssl/prod/
-

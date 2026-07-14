@@ -22,15 +22,18 @@ override.tf.json
 # Crash logs
 crash.log
 
-# ========================
-# Docker
-# ========================
+
 # Dependency directories
-# (If you are copying node_modules or similar into the image)
 node_modules/
 **/node_modules/
 npm-debug.log*
+./dist
+dist
 
+
+# ========================
+# Docker
+# ========================
 # Docker Compose overrides
 docker-compose.override.yml
 

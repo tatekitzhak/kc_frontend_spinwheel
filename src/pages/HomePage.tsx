@@ -93,6 +93,7 @@ export default function HomePage({ }: HomePageProps) {
             <div className="min-h-screen bg-[#FDFCFB] text-gray-900 font-sans selection:bg-black selection:text-white">
                 <div>
                     <h1>Welcome to the Home Page!!</h1>
+                    <h1>&#9432; How it works</h1>
                     {authenticated ? (
                         <div>
                             <p>Hello, {keycloak?.tokenParsed?.preferred_username}!</p>
