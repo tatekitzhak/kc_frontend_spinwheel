@@ -1,0 +1,152 @@
+# To manually deploy a Docker image from Docker Hub to AWS EC2
+name: manually-deploy-docker-img-from-docker-hub # 3
+
+on:
+  #   workflow_run:
+  #     workflows: ["Build-AWS-Infrastructure-with-Terraform"]
+  #     types: [completed]
+
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Required for AWS OIDC
+  contents: read # Required to checkout code
+  actions: read # Required to download artifacts from other runs
+
+jobs:
+  fetch_aws_ec2_instance_id:
+    name: Extract EC2 instance ID from AWS
+    runs-on: ubuntu-latest
+
+    outputs:
+      EC2_INSTANCE_ID: ${{ steps.ec2_data.outputs.ec2_instance_id }}
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v7
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Fetch EC2 Informations
+        id: ec2_data
+        run: |
+          # Fetch instances matching a specific tag (e.g., Name=MyWebServer)
+          INSTANCE_JSON=$(aws ec2 describe-instances \
+              --filters "Name=tag:Name,Values=${{secrets.AWS_EC2_INSTANCE_NAME}}" \
+              --query "Reservations[*].Instances[*].InstanceId" \
+              --output text)
+
+          # Write directly to the GitHub Output stream
+          echo "ec2_instance_id=$INSTANCE_JSON" >> "$GITHUB_OUTPUT"
+          echo "Found Instance ID: $INSTANCE_JSON , $GITHUB_OUTPUT"
+
+  deploy-docker-image-from-docker-hub-to-AWS-EC2:
+    name: Deploy to AWS EC2
+    needs:
+      - fetch_aws_ec2_instance_id
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
+      pull-requests: write
+
+    # Job-level environment variables
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      EC2_INSTANCE_ID: ${{ needs.fetch_aws_ec2_instance_id.outputs.EC2_INSTANCE_ID }}
+      DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify EC2 Instance ID
+        run: |
+          echo "Deploying to Target Instance ID: $EC2_INSTANCE_ID"
+
+      - name: Execute Remote Deployment via SSM
+        run: |
+          set -e
+
+          # 1. Fetch the Public IP of the target EC2 instance
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+
+          echo "Deploying application to target IP: https://$PUBLIC_IP"
+
+          # 2. Define docker-compose YAML content
+          COMPOSE_YAML="services:
+            front_end_app:
+              image: $DOCKER_USER/nginx_web_app_img:main
+              container_name: front_end_kc
+              env_file:
+                - .env
+              networks:
+                - kc_shared_central_nginx_proxy_network
+
+          networks:
+            kc_shared_central_nginx_proxy_network:
+              external: true"
+
+          # 3. Base64 encode the compose YAML (single-line output)
+          B64_COMPOSE=$(echo "$COMPOSE_YAML" | base64 -w 0)
+
+          # 4. Construct JSON payload safely using jq
+          COMMANDS_JSON=$(jq -n --arg b64 "$B64_COMPOSE" \
+          '{commands: [
+              "mkdir -p /home/ubuntu/test-app",
+              "echo \($b64) | base64 -d > /home/ubuntu/test-app/docker-compose.yml",
+              "echo \"--- Verifying File Location ---\"",
+              "ls -l /home/ubuntu/test-app/docker-compose.yml",
+              "echo \"--- Starting Docker Compose ---\"",
+              "sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans",
+              "sleep 2",
+              "echo \"--- Status Check ---\"",
+              "sudo docker ps -a"
+          ]}')
+
+          # 5. Send SSM Command
+          CMD_ID=$(aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --parameters "$COMMANDS_JSON" \
+            --output text \
+            --query "Command.CommandId")
+
+          echo "Sent SSM Command ID: $CMD_ID"
+
+          # 6. Polling Loop
+          for i in $(seq 1 36); do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$CMD_ID" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --query "Status" \
+              --output text 2>/dev/null || echo "Pending")
+
+            echo "Deployment Status ($i/36): $STATUS"
+            [ "$STATUS" = "Success" ] && break
+            [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]] && exit 1
+            sleep 10
+          done
+
+          # 7. Print Execution Output
+          echo "--- EC2 Execution Logs ---"
+          aws ssm get-command-invocation \
+            --command-id "$CMD_ID" \
+            --instance-id "$EC2_INSTANCE_ID" \
+            --query "StandardOutputContent" \
+            --output text
