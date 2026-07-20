@@ -166,5 +166,7 @@ jobs:
               --command-id "$CMD_ID" \
               --instance-id "$EC2_INSTANCE_ID" \
               --query "StandardOutputContent" \
-              --output textM
+              --output text
+            
+            
         
