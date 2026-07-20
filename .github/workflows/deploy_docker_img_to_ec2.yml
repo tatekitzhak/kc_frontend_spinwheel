@@ -97,15 +97,16 @@ jobs:
             # 1. Define docker-compose YAML content
             COMPOSE_YAML=$(cat <<EOF
             version: '3.8'
+
             services:
-            front_end_app:
-              image: ranitzahak/nginx_web_app_img:main
-              container_name: front_end_kc
-              env_file:
-                - .env
-              networks:
-                - kc_shared_central_nginx_proxy_network
-          
+              front_end_app:
+                image: ranitzahak/nginx_web_app_img:main
+                container_name: front_end_kc
+                env_file:
+                  - .env
+                networks:
+                  - kc_shared_central_nginx_proxy_network
+
             networks:
               kc_shared_central_nginx_proxy_network:
                 external: true
