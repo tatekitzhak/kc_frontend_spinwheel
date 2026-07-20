@@ -76,77 +76,95 @@ jobs:
         run: |
           echo "Deploying to Target Instance ID: $EC2_INSTANCE_ID"
 
-      - name: Execute Remote Deployment via SSM
-        run: |
-          set -e
-
-          # 1. Fetch the Public IP of the target EC2 instance
-          PUBLIC_IP=$(aws ec2 describe-instances \
-            --instance-ids "$EC2_INSTANCE_ID" \
-            --query "Reservations[0].Instances[0].PublicIpAddress" \
-            --output text)
-
-          echo "Deploying application to target IP: https://$PUBLIC_IP"
-
-          # 2. Define docker-compose YAML content
-          COMPOSE_YAML="services:
+          - name: Execute Remote Deployment via SSM
+          env:
+            # Map GitHub Secrets or Workflow Variables here
+            VITE_BACKEND_API_URL: "localhost"
+            VITE_KC_API_URL: "localhost"
+            VITE_KC_PORT: "8443"
+            VITE_REAL_NAME: "HTTPS_localhost_realm"
+            VITE_HTTPS_CLIENT_ID: "https_localhost_client_id"
+          run: |
+            set -e
+            
+            PUBLIC_IP=$(aws ec2 describe-instances \
+              --instance-ids "$EC2_INSTANCE_ID" \
+              --query "Reservations[0].Instances[0].PublicIpAddress" \
+              --output text)
+            
+            echo "Deploying application to target IP: https://$PUBLIC_IP"
+    
+            # 1. Define docker-compose YAML content
+            COMPOSE_YAML="services:
             front_end_app:
-              image: $DOCKER_USER/nginx_web_app_img:main
+              image: ${DOCKER_USER}/nginx_web_app_img:main
               container_name: front_end_kc
               env_file:
                 - .env
               networks:
                 - kc_shared_central_nginx_proxy_network
-
+          
           networks:
             kc_shared_central_nginx_proxy_network:
               external: true"
-
-          # 3. Base64 encode the compose YAML (single-line output)
-          B64_COMPOSE=$(echo "$COMPOSE_YAML" | base64 -w 0)
-
-          # 4. Construct JSON payload safely using jq
-          COMMANDS_JSON=$(jq -n --arg b64 "$B64_COMPOSE" \
-          '{commands: [
-              "mkdir -p /home/ubuntu/test-app",
-              "echo \($b64) | base64 -d > /home/ubuntu/test-app/docker-compose.yml",
-              "echo \"--- Verifying File Location ---\"",
-              "ls -l /home/ubuntu/test-app/docker-compose.yml",
-              "echo \"--- Starting Docker Compose ---\"",
-              "sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans",
-              "sleep 2",
-              "echo \"--- Status Check ---\"",
-              "sudo docker ps -a"
-          ]}')
-
-          # 5. Send SSM Command
-          CMD_ID=$(aws ssm send-command \
-            --document-name "AWS-RunShellScript" \
-            --instance-ids "$EC2_INSTANCE_ID" \
-            --parameters "$COMMANDS_JSON" \
-            --output text \
-            --query "Command.CommandId")
-
-          echo "Sent SSM Command ID: $CMD_ID"
-
-          # 6. Polling Loop
-          for i in $(seq 1 36); do
-            STATUS=$(aws ssm get-command-invocation \
+    
+            # 2. Define .env content
+            ENV_FILE_CONTENT="VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
+            VITE_KC_API_URL=${VITE_KC_API_URL}
+            VITE_KC_PORT=${VITE_KC_PORT}
+            VITE_REAL_NAME=${VITE_REAL_NAME}
+            VITE_HTTPS_CLIENT_ID=${VITE_HTTPS_CLIENT_ID}"
+    
+            # 3. Base64 encode both payloads
+            B64_COMPOSE=$(echo "$COMPOSE_YAML" | base64 -w 0)
+            B64_ENV=$(echo "$ENV_FILE_CONTENT" | base64 -w 0)
+    
+            # 4. Construct JSON payload for SSM
+            COMMANDS_JSON=$(jq -n \
+              --arg b64_compose "$B64_COMPOSE" \
+              --arg b64_env "$B64_ENV" \
+              '{commands: [
+                "mkdir -p /home/ubuntu/test-app",
+                "echo \($b64_compose) | base64 -d > /home/ubuntu/test-app/docker-compose.yml",
+                "echo \($b64_env) | base64 -d > /home/ubuntu/test-app/.env",
+                "echo \"--- Pulling Latest Docker Image ---\"",
+                "sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml pull",
+                "echo \"--- Starting Docker Compose ---\"",
+                "sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans",
+                "sleep 3",
+                "echo \"--- Container Verification ---\"",
+                "sudo docker ps -a"
+            ]}')
+    
+            # 5. Send SSM Command
+            CMD_ID=$(aws ssm send-command \
+              --document-name "AWS-RunShellScript" \
+              --instance-ids "$EC2_INSTANCE_ID" \
+              --parameters "$COMMANDS_JSON" \
+              --output text \
+              --query "Command.CommandId")
+    
+            echo "Sent SSM Command ID: $CMD_ID"
+    
+            # 6. Polling Loop
+            for i in $(seq 1 36); do
+              STATUS=$(aws ssm get-command-invocation \
+                --command-id "$CMD_ID" \
+                --instance-id "$EC2_INSTANCE_ID" \
+                --query "Status" \
+                --output text 2>/dev/null || echo "Pending")
+    
+              echo "Deployment Status ($i/36): $STATUS"
+              [ "$STATUS" = "Success" ] && break
+              [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]] && exit 1
+              sleep 10
+            done
+    
+            # 7. Output Execution Logs
+            echo "--- EC2 Execution Logs ---"
+            aws ssm get-command-invocation \
               --command-id "$CMD_ID" \
               --instance-id "$EC2_INSTANCE_ID" \
-              --query "Status" \
-              --output text 2>/dev/null || echo "Pending")
-
-            echo "Deployment Status ($i/36): $STATUS"
-            [ "$STATUS" = "Success" ] && break
-            [[ "$STATUS" == "Failed" || "$STATUS" == "TimedOut" || "$STATUS" == "Cancelled" ]] && exit 1
-            sleep 10
-          done
-
-          # 7. Print Execution Output
-          echo "--- EC2 Execution Logs ---"
-          aws ssm get-command-invocation \
-            --command-id "$CMD_ID" \
-            --instance-id "$EC2_INSTANCE_ID" \
-            --query "StandardOutputContent" \
-            --output text
+              --query "StandardOutputContent" \
+              --output textM
+        
