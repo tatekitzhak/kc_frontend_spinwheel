@@ -79,8 +79,8 @@ jobs:
       - name: Execute Remote Deployment via SSM
         env:
           # Map GitHub Secrets or Workflow Variables here
-          VITE_BACKEND_API_URL: "localhost"
-          VITE_KC_API_URL: "localhost"
+          VITE_BACKEND_API_URL: ${{secrets.VITE_BACKEND_API_URL}}
+          VITE_KC_API_URL: ${{secrets.API_URL}}
           VITE_KC_PORT: "8443"
           VITE_REAL_NAME: "HTTPS_localhost_realm"
           VITE_HTTPS_CLIENT_ID: "https_localhost_client_id"
@@ -100,7 +100,7 @@ jobs:
 
             services:
               front_end_app:
-                image: ranitzahak/nginx_web_app_img:main
+                image: $DOCKER_USER/nginx_web_app_img:main
                 container_name: front_end_kc
                 env_file:
                   - .env

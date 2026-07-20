@@ -15,6 +15,20 @@ RUN rm -rf node_modules package-lock.json && \
 # Copy the rest of your application code
 COPY . .
 
+# Declare Build Arguments
+ARG VITE_BACKEND_API_URL
+ARG VITE_KC_API_URL
+ARG VITE_KC_PORT
+ARG VITE_REAL_NAME
+ARG VITE_HTTPS_CLIENT_ID
+
+# Set Environment Variables for the build step
+ENV VITE_BACKEND_API_URL=$VITE_BACKEND_API_URL
+ENV VITE_KC_API_URL=$VITE_KC_API_URL
+ENV VITE_KC_PORT=$VITE_KC_PORT
+ENV VITE_REAL_NAME=$VITE_REAL_NAME
+ENV VITE_HTTPS_CLIENT_ID=$VITE_HTTPS_CLIENT_ID
+
 # Run the build command (creates the /app/dist directory)
 RUN npm run build
 

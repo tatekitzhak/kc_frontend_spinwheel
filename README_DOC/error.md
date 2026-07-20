@@ -1,68 +1,127 @@
-This is my Dockerfile, update and modify by following informations:
+This is my github action workflow, and  file: ./Dockerfile.frontend
 
-rm -rf node_modules package-lock.json
-npm install
-npm run build
+name: Push to Docker Hub
 
+on:
+  push:
+    # branches: [ "main" ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-FROM node:20-slim
+jobs:
+  call_time:
+    uses: ./.github/workflows/shared_time_utility.yml  
 
-WORKDIR /usr/src/app
+  build_and_push_to_docker_image:
+    needs: call_time
+    name: Push Docker image to Docker Hub
+    env:
+        GLOBAL_TOME: ${{ needs.call_time.outputs.formatted_time }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v6
 
+      - name: Use Shared Time
+        run: |
+          echo "The time passed from the utility is: $GLOBAL_TOME"
+
+      - name: Log in to Docker Hub 
+        uses: docker/login-action@v4
+        with: 
+          username: ${{secrets.DOCKER_USERNAME}}
+          password: ${{secrets.DOCKER_PASSWORD}}
+          
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{secrets.DOCKER_USERNAME}}/nginx_web_app_img
+
+      - name: print ${{steps.meta.outputs.tags}}
+        run: echo "Build Docker- ${{toJSON(steps.meta)}}"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+        #   repository: ${{secrets.DOCKER_USERNAME}}/nginx_web_app_img
+          tags: ${{steps.meta.outputs.tags}}
+          labels: ${{steps.meta.outputs.labels}}      
+
+This file Dockerfile.frontend:
+
+# ==========================================
+# STAGE 1: Build the Node.js application
+# ==========================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files first to leverage Docker layer caching
+COPY package*.json ./
+
+# Clean previous installations, install dependencies, and build
+RUN rm -rf node_modules package-lock.json && \
+    npm install
+
+# Copy the rest of your application code
 COPY . .
-COPY package.json ./
 
-EXPOSE 3000
+# Run the build command (creates the /app/dist directory)
+RUN npm run build
 
-CMD ["node", "build/index.js"]
 
-informations application: node.js express. typescript 
+# ==========================================
+# STAGE 2: Serve the application with Nginx
+# ==========================================
+FROM ubuntu/nginx
 
-{
-  "name": "typescript-expressjs-web-app",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "build/index.js",
-  "types": "build/index.js",
-  "scripts": {
-    "build": "rimraf ./build && tsc",
-    "start:dev": "NODE_ENV=development nodemon --exec node --loader ts-node/esm src/index.ts",
-    "start:stage": "nodemon --exec node --loader ts-node/esm src/index.ts",
-    "start": "npm run build",
-    "start:prod": "node build/index.js",
-    "lint": "eslint . --ext .ts",
-    "test": "jest"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.25",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.19.39",
-    "@typescript-eslint/eslint-plugin": "^7.0.2",
-    "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-jest": "^27.9.0",
-    "eslint-plugin-prettier": "^5.1.3",
-    "jest": "^29.7.0",
-    "nodemon": "^3.1.0",
-    "prettier": "^3.2.5",
-    "rimraf": "^5.0.5",
-    "run-script-os": "^1.1.6",
-    "ts-jest": "^29.1.2",
-    "ts-node": "^10.9.2",
-    "tslib": "^2.6.2",
-    "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "axios": "^1.15.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
-    "express": "^4.18.2",
-    "jose": "^6.2.2",
-    "mongodb": "^6.12.0"
-  }
-}
+EXPOSE 80 443
+WORKDIR /app
+
+# Copy the compiled assets from the builder stage
+COPY --from=builder /app/dist /var/www/html
+
+# Install debugging/networking tools
+RUN apt-get update -y && \
+    apt-get install -y vim iputils-ping && \
+    rm -rf /var/lib/apt/lists/*
+
+# Clean up default Nginx configuration
+RUN rm -f /etc/nginx/sites-enabled/default
+
+# Copy your custom Nginx configurations
+COPY ./nginx/config/default /etc/nginx/sites-enabled/default
+COPY ./nginx/config/nginx.conf /etc/nginx/
+
+
+Dockerfile.frontend dependent .env file whene run and build to creates the /app/dist directory 
+
+RUN npm run build:
+
+VITE_BACKEND_API_URL=localhost
+
+VITE_KC_API_URL=localhost
+
+VITE_KC_PORT=8443
+VITE_REAL_NAME=HTTPS_localhost_realm
+
+VITE_HTTPS_CLIENT_ID=https_localhost_client_id
+
+And this is .gitignore file:
+
+**/.DS_Store
+.DS_Store
+Thumbs.db
+.env
+.venv/
+.env.local
+.env.development
+.env.test.local
+.env.production

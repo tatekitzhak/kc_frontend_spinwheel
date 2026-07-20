@@ -50,4 +50,10 @@ jobs:
           push: true
         #   repository: ${{secrets.DOCKER_USERNAME}}/nginx_web_app_img
           tags: ${{steps.meta.outputs.tags}}
-          labels: ${{steps.meta.outputs.labels}}      
+          labels: ${{steps.meta.outputs.labels}}
+          build-args: |
+            VITE_BACKEND_API_URL=${{ secrets.VITE_BACKEND_API_URL }}
+            VITE_KC_API_URL=${{ secrets.VITE_KC_API_URL }}
+            VITE_KC_PORT=${{ secrets.VITE_KC_PORT }}
+            VITE_REAL_NAME=${{ secrets.VITE_REAL_NAME }}
+            VITE_HTTPS_CLIENT_ID=${{ secrets.VITE_HTTPS_CLIENT_ID }}
