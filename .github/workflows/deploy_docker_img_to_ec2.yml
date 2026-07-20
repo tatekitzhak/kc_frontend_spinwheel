@@ -119,18 +119,20 @@ jobs:
             B64_COMPOSE=$(echo "$COMPOSE_YAML" | base64 -w 0)
             B64_ENV=$(echo "$ENV_FILE_CONTENT" | base64 -w 0)
     
-            # 4. Construct JSON payload for SSM
+            # 4. Construct JSON payload for SSM (with error redirection and Docker V2 syntax)
             COMMANDS_JSON=$(jq -n \
               --arg b64_compose "$B64_COMPOSE" \
               --arg b64_env "$B64_ENV" \
               '{commands: [
                 "mkdir -p /home/ubuntu/test-app",
-                "echo \($b64_compose) | base64 -d > /home/ubuntu/test-app/docker-compose.yml",
-                "echo \($b64_env) | base64 -d > /home/ubuntu/test-app/.env",
+                "echo \"\($b64_compose)\" | base64 -d > /home/ubuntu/test-app/docker-compose.yml",
+                "echo \"\($b64_env)\" | base64 -d > /home/ubuntu/test-app/.env",
+                "echo \"--- Inspecting Decoded Files ---\"",
+                "cat /home/ubuntu/test-app/docker-compose.yml",
                 "echo \"--- Pulling Latest Docker Image ---\"",
-                "sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml pull",
+                "sudo docker compose -f /home/ubuntu/test-app/docker-compose.yml pull 2>&1 || sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml pull 2>&1",
                 "echo \"--- Starting Docker Compose ---\"",
-                "sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans",
+                "sudo docker compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans 2>&1 || sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans 2>&1",
                 "sleep 3",
                 "echo \"--- Container Verification ---\"",
                 "sudo docker ps -a"
