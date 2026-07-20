@@ -95,9 +95,11 @@ jobs:
             echo "Deploying application to target IP: https://$PUBLIC_IP"
     
             # 1. Define docker-compose YAML content
-            COMPOSE_YAML="services:
+            COMPOSE_YAML=$(cat <<EOF
+            version: '3.8'
+            services:
             front_end_app:
-              image: ${DOCKER_USER}/nginx_web_app_img:main
+              image: ranitzahak/nginx_web_app_img:main
               container_name: front_end_kc
               env_file:
                 - .env
@@ -106,14 +108,19 @@ jobs:
           
             networks:
               kc_shared_central_nginx_proxy_network:
-                external: true"
+                external: true
+            EOF
+            )
     
             # 2. Define .env content
-            ENV_FILE_CONTENT="VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
+            ENV_FILE_CONTENT=$(cat <<EOF
+            VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
             VITE_KC_API_URL=${VITE_KC_API_URL}
             VITE_KC_PORT=${VITE_KC_PORT}
             VITE_REAL_NAME=${VITE_REAL_NAME}
-            VITE_HTTPS_CLIENT_ID=${VITE_HTTPS_CLIENT_ID}"
+            VITE_HTTPS_CLIENT_ID=${VITE_HTTPS_CLIENT_ID}
+            EOF
+            )
     
             # 3. Base64 encode both payloads
             B64_COMPOSE=$(echo "$COMPOSE_YAML" | base64 -w 0)
