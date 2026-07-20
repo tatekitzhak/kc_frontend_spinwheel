@@ -76,15 +76,15 @@ jobs:
         run: |
           echo "Deploying to Target Instance ID: $EC2_INSTANCE_ID"
 
-          - name: Execute Remote Deployment via SSM
-          env:
-            # Map GitHub Secrets or Workflow Variables here
-            VITE_BACKEND_API_URL: "localhost"
-            VITE_KC_API_URL: "localhost"
-            VITE_KC_PORT: "8443"
-            VITE_REAL_NAME: "HTTPS_localhost_realm"
-            VITE_HTTPS_CLIENT_ID: "https_localhost_client_id"
-          run: |
+      - name: Execute Remote Deployment via SSM
+        env:
+          # Map GitHub Secrets or Workflow Variables here
+          VITE_BACKEND_API_URL: "localhost"
+          VITE_KC_API_URL: "localhost"
+          VITE_KC_PORT: "8443"
+          VITE_REAL_NAME: "HTTPS_localhost_realm"
+          VITE_HTTPS_CLIENT_ID: "https_localhost_client_id"
+        run: |
             set -e
             
             PUBLIC_IP=$(aws ec2 describe-instances \
@@ -104,9 +104,9 @@ jobs:
               networks:
                 - kc_shared_central_nginx_proxy_network
           
-          networks:
-            kc_shared_central_nginx_proxy_network:
-              external: true"
+            networks:
+              kc_shared_central_nginx_proxy_network:
+                external: true"
     
             # 2. Define .env content
             ENV_FILE_CONTENT="VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
