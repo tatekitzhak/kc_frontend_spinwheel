@@ -80,10 +80,10 @@ jobs:
         env:
           # Map GitHub Secrets or Workflow Variables here
           VITE_BACKEND_API_URL: ${{secrets.VITE_BACKEND_API_URL}}
-          VITE_KC_API_URL: ${{secrets.API_URL}}
-          VITE_KC_PORT: "8443"
-          VITE_REAL_NAME: "HTTPS_localhost_realm"
-          VITE_HTTPS_CLIENT_ID: "https_localhost_client_id"
+          VITE_KC_ADMIN_CONSOLE_API_URL: ${{secrets.API_URL}}
+          VITE_KC_ADMIN_CONSOLE_PORT: "8443"
+          VITE_KC_ADMIN_CONSOLE_REAL_NAME: "HTTPS_localhost_realm"
+          VITE_KC_ADMIN_CONSOLE_CLIENT_ID: "https_localhost_client_id"
         run: |
             set -e
             
@@ -116,10 +116,10 @@ jobs:
             # 2. Define .env content
             ENV_FILE_CONTENT=$(cat <<EOF
             VITE_BACKEND_API_URL=${VITE_BACKEND_API_URL}
-            VITE_KC_API_URL=${VITE_KC_API_URL}
-            VITE_KC_PORT=${VITE_KC_PORT}
-            VITE_REAL_NAME=${VITE_REAL_NAME}
-            VITE_HTTPS_CLIENT_ID=${VITE_HTTPS_CLIENT_ID}
+            VITE_KC_ADMIN_CONSOLE_API_URL=${VITE_KC_ADMIN_CONSOLE_API_URL}
+            VITE_KC_ADMIN_CONSOLE_PORT=${VITE_KC_ADMIN_CONSOLE_PORT}
+            VITE_KC_ADMIN_CONSOLE_REAL_NAME=${VITE_KC_ADMIN_CONSOLE_REAL_NAME}
+            VITE_KC_ADMIN_CONSOLE_CLIENT_ID=${VITE_KC_ADMIN_CONSOLE_CLIENT_ID}
             EOF
             )
     
@@ -132,15 +132,15 @@ jobs:
               --arg b64_compose "$B64_COMPOSE" \
               --arg b64_env "$B64_ENV" \
               '{commands: [
-                "mkdir -p /home/ubuntu/test-app",
-                "echo \"\($b64_compose)\" | base64 -d > /home/ubuntu/test-app/docker-compose.yml",
-                "echo \"\($b64_env)\" | base64 -d > /home/ubuntu/test-app/.env",
+                "mkdir -p /home/ubuntu/github_action_frontend",
+                "echo \"\($b64_compose)\" | base64 -d > /home/ubuntu/github_action_frontend/docker-compose.yml",
+                "echo \"\($b64_env)\" | base64 -d > /home/ubuntu/github_action_frontend/.env",
                 "echo \"--- Inspecting Decoded Files ---\"",
-                "cat /home/ubuntu/test-app/docker-compose.yml",
+                "cat /home/ubuntu/github_action_frontend/docker-compose.yml",
                 "echo \"--- Pulling Latest Docker Image ---\"",
-                "sudo docker compose -f /home/ubuntu/test-app/docker-compose.yml pull 2>&1 || sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml pull 2>&1",
+                "sudo docker compose -f /home/ubuntu/github_action_frontend/docker-compose.yml pull 2>&1 || sudo docker-compose -f /home/ubuntu/github_action_frontend/docker-compose.yml pull 2>&1",
                 "echo \"--- Starting Docker Compose ---\"",
-                "sudo docker compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans 2>&1 || sudo docker-compose -f /home/ubuntu/test-app/docker-compose.yml up -d --remove-orphans 2>&1",
+                "sudo docker compose -f /home/ubuntu/github_action_frontend/docker-compose.yml up -d --remove-orphans 2>&1 || sudo docker-compose -f /home/ubuntu/github_action_frontend/docker-compose.yml up -d --remove-orphans 2>&1",
                 "sleep 3",
                 "echo \"--- Container Verification ---\"",
                 "sudo docker ps -a"

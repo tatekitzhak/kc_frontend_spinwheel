@@ -1,0 +1,16 @@
+# Build production-ready CI/CD pipelines with GitHub Actions on AWS EC2
+
+## Repository Actions secrets and variables
+ 
+- API_URL: `[]`
+- AWS_EC2_INSTANCE_NAME: 
+- AWS_REGION: 
+- AWS_ROLE:
+- DOCKER_PASSWORD:
+- DOCKER_USERNAME:
+
+- VITE_BACKEND_API_URL:
+- VITE_KC_ADMIN_CONSOLE_CLIENT_ID:	
+- VITE_KC_ADMIN_CONSOLE_API_URL:
+- VITE_KC_ADMIN_CONSOLE_PORT:
+- VITE_KC_ADMIN_CONSOLE_REAL_NAME:

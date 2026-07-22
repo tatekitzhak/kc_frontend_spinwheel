@@ -53,7 +53,7 @@ jobs:
           labels: ${{steps.meta.outputs.labels}}
           build-args: |
             VITE_BACKEND_API_URL=${{ secrets.VITE_BACKEND_API_URL }}
-            VITE_KC_API_URL=${{ secrets.VITE_KC_API_URL }}
-            VITE_KC_PORT=${{ secrets.VITE_KC_PORT }}
-            VITE_REAL_NAME=${{ secrets.VITE_REAL_NAME }}
-            VITE_HTTPS_CLIENT_ID=${{ secrets.VITE_HTTPS_CLIENT_ID }}
+            VITE_KC_ADMIN_CONSOLE_API_URL=${{ secrets.VITE_KC_ADMIN_CONSOLE_API_URL }}
+            VITE_KC_ADMIN_CONSOLE_PORT=${{ secrets.VITE_KC_ADMIN_CONSOLE_PORT }}
+            VITE_KC_ADMIN_CONSOLE_REAL_NAME=${{ secrets.VITE_KC_ADMIN_CONSOLE_REAL_NAME }}
+            VITE_KC_ADMIN_CONSOLE_CLIENT_ID=${{ secrets.VITE_KC_ADMIN_CONSOLE_CLIENT_ID }}
