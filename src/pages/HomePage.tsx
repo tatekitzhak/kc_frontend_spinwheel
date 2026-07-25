@@ -25,8 +25,7 @@ export default function HomePage({ }: HomePageProps) {
     const { keycloak, authenticated } = useKeycloak();
     const [data, setData] = useState(null);
 
-    const deploy_env = import.meta.env.VITE_DEPLOY_ENV;
-    const BACKEND_API_URL = import.meta.env.VITE_BACKEND_API_URL;
+    const BACKEND_API_URL = import.meta.env.VITE_EXPRESS_JS_REST_API_URL;
     
     const fetchData = async () => {
         
@@ -37,13 +36,7 @@ export default function HomePage({ }: HomePageProps) {
         };
 
         try {
-            let API_URL_PREFIX = 'https';
-            let port = '';
-
-            if(deploy_env == 'development'){
-                API_URL_PREFIX = 'http';
-                port = ':'+3000;
-            }
+            
             const BACKEND_API_KC_PROTECTED_ENDPOINT = `https://${BACKEND_API_URL}/keycloak/protected`;
 
             console.log("HomePage keycloak:", keycloak)

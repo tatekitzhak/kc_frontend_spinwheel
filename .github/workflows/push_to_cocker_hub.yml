@@ -17,7 +17,7 @@ jobs:
     needs: call_time
     name: Push Docker image to Docker Hub
     env:
-        GLOBAL_TOME: ${{ needs.call_time.outputs.formatted_time }}
+        GLOBAL_TIME: ${{ needs.call_time.outputs.formatted_time }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -25,7 +25,7 @@ jobs:
 
       - name: Use Shared Time
         run: |
-          echo "The time passed from the utility is: $GLOBAL_TOME"
+          echo "The time passed from the utility is: $GLOBAL_TIME"
 
       - name: Log in to Docker Hub 
         uses: docker/login-action@v4
@@ -52,7 +52,7 @@ jobs:
           tags: ${{steps.meta.outputs.tags}}
           labels: ${{steps.meta.outputs.labels}}
           build-args: |
-            VITE_BACKEND_API_URL=${{ secrets.VITE_BACKEND_API_URL }}
+            VITE_EXPRESS_JS_REST_API_URL=${{ secrets.VITE_EXPRESS_JS_REST_API_URL }}
             VITE_KC_ADMIN_CONSOLE_API_URL=${{ secrets.VITE_KC_ADMIN_CONSOLE_API_URL }}
             VITE_KC_ADMIN_CONSOLE_PORT=${{ secrets.VITE_KC_ADMIN_CONSOLE_PORT }}
             VITE_KC_ADMIN_CONSOLE_REAL_NAME=${{ secrets.VITE_KC_ADMIN_CONSOLE_REAL_NAME }}
