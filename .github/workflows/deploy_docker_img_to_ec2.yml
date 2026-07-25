@@ -61,6 +61,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
       EC2_INSTANCE_ID: ${{ needs.fetch_aws_ec2_instance_id.outputs.EC2_INSTANCE_ID }}
       DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+      FRONTEND_REPOSITORY_NAME: ${{secrets.FRONTEND_REPOSITORY_NAME}}
 
     steps:
       - name: Checkout Repository
@@ -100,7 +101,7 @@ jobs:
 
             services:
               front_end_app:
-                image: $DOCKER_USER/frontend_spin_wheel:main
+                image: $DOCKER_USER/$FRONTEND_REPOSITORY_NAME:main
                 container_name: front_end_kc
                 env_file:
                   - .env

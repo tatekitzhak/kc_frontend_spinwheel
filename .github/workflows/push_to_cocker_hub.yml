@@ -37,7 +37,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{secrets.DOCKER_USERNAME}}/nginx_web_app_img
+          images: ${{secrets.DOCKER_USERNAME}}/${{secrets.FRONTEND_REPOSITORY_NAME}}
 
       - name: print ${{steps.meta.outputs.tags}}
         run: echo "Build Docker- ${{toJSON(steps.meta)}}"
@@ -48,7 +48,6 @@ jobs:
           context: .
           file: ./Dockerfile.frontend
           push: true
-        #   repository: ${{secrets.DOCKER_USERNAME}}/nginx_web_app_img
           tags: ${{steps.meta.outputs.tags}}
           labels: ${{steps.meta.outputs.labels}}
           build-args: |
