@@ -87,6 +87,7 @@ export default function HomePage({ }: HomePageProps) {
                 <div>
                     <h1>Welcome to the Home Page!!</h1>
                     <h1>&#9432; How it works</h1>
+                    <h1>People love a good explanation, they hunt them down.</h1>
                     {authenticated ? (
                         <div>
                             <p>Hello, {keycloak?.tokenParsed?.preferred_username}!</p>

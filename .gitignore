@@ -1,6 +1,15 @@
 # ========================
 # Terraform
 # ========================
+github_actions_secret/
+**/github_actions_secret/
+tr_github_actions_secret/*.tfstate*
+tr_github_actions_secret/*.tfstate.lock.info
+tr_github_actions_secret/.terraform/
+tr_github_actions_secret/.terraform.lock.hcl
+tr_github_actions_secret/*.tfvars
+tr_github_actions_secret/*.tfvars.json
+
 # Compiled files
 *.tfstate
 *.tfstate.backup
