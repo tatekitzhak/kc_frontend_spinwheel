@@ -80,7 +80,7 @@ jobs:
           VITE_EXPRESS_JS_REST_API_URL: ${{secrets.VITE_EXPRESS_JS_REST_API_URL}}
           VITE_KC_ADMIN_CONSOLE_API_URL: ${{secrets.API_URL}}
           VITE_KC_ADMIN_CONSOLE_PORT: "8443"
-          VITE_KC_ADMIN_CONSOLE_REAL_NAME: "HTTPS_localhost_realm"
+          VITE_KC_ADMIN_CONSOLE_REALM_NAME: "HTTPS_localhost_realm"
           VITE_KC_ADMIN_CONSOLE_CLIENT_ID: "https_localhost_client_id"
         run: |
             set -e
@@ -118,7 +118,7 @@ jobs:
             VITE_EXPRESS_JS_REST_API_URL=${EXPRESS_API_URL}
             VITE_KC_ADMIN_CONSOLE_API_URL=${PUBLIC_IP}
             VITE_KC_ADMIN_CONSOLE_PORT=8443
-            VITE_KC_ADMIN_CONSOLE_REAL_NAME=${VITE_KC_ADMIN_CONSOLE_REAL_NAME}
+            VITE_KC_ADMIN_CONSOLE_REALM_NAME=${VITE_KC_ADMIN_CONSOLE_REALM_NAME}
             VITE_KC_ADMIN_CONSOLE_CLIENT_ID=${VITE_KC_ADMIN_CONSOLE_CLIENT_ID}
             EOF
             )

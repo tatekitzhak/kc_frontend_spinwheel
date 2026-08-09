@@ -1,0 +1,1 @@
+- Peer-to-peer (P2P) equipment rental lets people and businesses rent out idle tools

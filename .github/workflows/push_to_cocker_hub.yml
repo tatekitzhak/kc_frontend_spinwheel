@@ -110,5 +110,5 @@ jobs:
             VITE_EXPRESS_JS_REST_API_URL=${{ steps.fetch_ip.outputs.PUBLIC_IP }}
             VITE_KC_ADMIN_CONSOLE_API_URL=${{ steps.fetch_ip.outputs.PUBLIC_IP }}
             VITE_KC_ADMIN_CONSOLE_PORT=${{ secrets.VITE_KC_ADMIN_CONSOLE_PORT }}
-            VITE_KC_ADMIN_CONSOLE_REAL_NAME=${{ secrets.VITE_KC_ADMIN_CONSOLE_REAL_NAME }}
+            VITE_KC_ADMIN_CONSOLE_REALM_NAME=${{ secrets.VITE_KC_ADMIN_CONSOLE_REALM_NAME }}
             VITE_KC_ADMIN_CONSOLE_CLIENT_ID=${{ secrets.VITE_KC_ADMIN_CONSOLE_CLIENT_ID }}

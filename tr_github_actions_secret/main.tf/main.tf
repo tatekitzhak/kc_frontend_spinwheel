@@ -31,7 +31,7 @@ locals {
     VITE_KC_ADMIN_CONSOLE_API_URL  = var.vite_kc_admin_console_api_url
     VITE_KC_ADMIN_CONSOLE_CLIENT_ID = var.vite_kc_admin_console_client_id
     VITE_KC_ADMIN_CONSOLE_PORT     = var.vite_kc_admin_console_port
-    VITE_KC_ADMIN_CONSOLE_REAL_NAME = var.vite_kc_admin_console_real_name
+    VITE_KC_ADMIN_CONSOLE_REALM_NAME = var.VITE_KC_ADMIN_CONSOLE_REALM_NAME
   }
 }
 
@@ -101,7 +101,7 @@ variable "vite_kc_admin_console_port" {
   description = "Keycloak Admin Console port"
 }
 
-variable "vite_kc_admin_console_real_name" {
+variable "VITE_KC_ADMIN_CONSOLE_REALM_NAME" {
   type        = string
   description = "Keycloak Admin Console realm name"
 }
