@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 import useKeycloak from '../authKeycloakProvider/useKeycloak';
@@ -25,28 +25,28 @@ export default function HomePage({ }: HomePageProps) {
     const { keycloak, authenticated } = useKeycloak();
     const [data, setData] = useState(null);
 
-    const BACKEND_API_URL = import.meta.env.VITE_EXPRESS_JS_REST_API_URL;
-    
+    const BACKEND_API_URL = import.meta.env.VITE_EXPRESS_JS_REST_API_URL || 'localhost';
+
+
     const fetchData = async () => {
-        
-        
+
         if (!keycloak?.token) {
-            console.log("HomePage2:", keycloak)
-            return
-        };
+            console.log("HomePage2: No keycloak token available", keycloak);
+            return;
+        }
 
         try {
-            
-            const BACKEND_API_KC_PROTECTED_ENDPOINT = `https://${BACKEND_API_URL}/keycloak/protected`;
+            // If Express routes through Central Proxy on port 443/80, use localhost
+            const BACKEND_API_KC_PROTECTED_ENDPOINT = `https://${BACKEND_API_URL}:4000/keycloak/protected`;
 
-            console.log("HomePage keycloak:", keycloak)
-            console.log("HomePage BACKEND_API_KC_PROTECTED_ENDPOINT:", BACKEND_API_KC_PROTECTED_ENDPOINT)
+            console.log("HomePage keycloak:", keycloak);
+            console.log("HomePage BACKEND_API_KC_PROTECTED_ENDPOINT:", BACKEND_API_KC_PROTECTED_ENDPOINT);
 
             // 1. Ensure token is fresh
             await keycloak.updateToken(30);
 
             // 2. Make the Axios request
-            const response = await axios.get( BACKEND_API_KC_PROTECTED_ENDPOINT, {
+            const response = await axios.get(BACKEND_API_KC_PROTECTED_ENDPOINT, {
                 headers: {
                     Authorization: `Bearer ${keycloak.token}`,
                     'Content-Type': 'application/json',
@@ -123,9 +123,9 @@ export default function HomePage({ }: HomePageProps) {
                                     disabled={isSpinning || entries.length < 2}
                                     className={`group relative px-12 py-5 rounded-full text-2xl font-black uppercase tracking-widest transition-all
                                                     ${isSpinning || entries.length < 2
-                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                        : 'bg-black text-white hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_70px_rgba(0,0,0,0.3)]'
-                                                    } 
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-black text-white hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:shadow-[0_20px_70px_rgba(0,0,0,0.3)]'
+                                        } 
                                                 `}
                                 >
                                     <span className="relative z-10 flex items-center gap-3">

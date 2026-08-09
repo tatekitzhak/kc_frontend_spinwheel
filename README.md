@@ -179,12 +179,3 @@ http://localhost:3000/#error=login_required&state=e29fb1f7-72d2-4685-a5c8-ec7d8f
 - rm -rf package-lock.json
 - npm cache verify
 
-
-ERROR:
-
-vendor-tJYGX_wu.js:70 
- GET https://18.223.255.165/keycloak/protected 401 (Unauthorized)
-
-index-BwQ2shQi.js:2 Failed to fetch data: AxiosError: Request failed with status code 401
-    at zb (vendor-tJYGX_wu.js:70:1087)
-    at XMLHttpRequest.D (vendor-tJYGX_wu.js:70:5927)

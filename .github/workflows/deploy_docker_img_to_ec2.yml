@@ -1,10 +1,7 @@
-# To manually deploy a Docker image from Docker Hub to AWS EC2
-name: manually-deploy-docker-img-from-docker-hub # 3
+# Deploy manually a Docker image from Docker registry to AWS EC2
+name: manually-deploy-docker-img-from-docker-hub
 
 on:
-  #   workflow_run:
-  #     workflows: ["Build-AWS-Infrastructure-with-Terraform"]
-  #     types: [completed]
 
   workflow_dispatch:
 
@@ -97,7 +94,6 @@ jobs:
     
             # 1. Define docker-compose YAML content
             COMPOSE_YAML=$(cat <<EOF
-            version: '3.8'
 
             services:
               front_end_app:
@@ -114,11 +110,14 @@ jobs:
             EOF
             )
     
-            # 2. Define .env content
+            # 2. Format the REST API URL using the fetched IP and port 4000
+            EXPRESS_API_URL="${PUBLIC_IP}:4000"
+
+            # 3. Define .env file content
             ENV_FILE_CONTENT=$(cat <<EOF
-            VITE_EXPRESS_JS_REST_API_URL=${VITE_EXPRESS_JS_REST_API_URL}
-            VITE_KC_ADMIN_CONSOLE_API_URL=${VITE_KC_ADMIN_CONSOLE_API_URL}
-            VITE_KC_ADMIN_CONSOLE_PORT=${VITE_KC_ADMIN_CONSOLE_PORT}
+            VITE_EXPRESS_JS_REST_API_URL=${EXPRESS_API_URL}
+            VITE_KC_ADMIN_CONSOLE_API_URL=${PUBLIC_IP}
+            VITE_KC_ADMIN_CONSOLE_PORT=8443
             VITE_KC_ADMIN_CONSOLE_REAL_NAME=${VITE_KC_ADMIN_CONSOLE_REAL_NAME}
             VITE_KC_ADMIN_CONSOLE_CLIENT_ID=${VITE_KC_ADMIN_CONSOLE_CLIENT_ID}
             EOF

@@ -1,0 +1,57 @@
+# ==========================================
+# STAGE 1: Build the Node.js application
+# ==========================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files first to leverage Docker layer caching
+COPY package*.json ./
+
+# Clean previous installations, install dependencies, and build
+RUN rm -rf node_modules package-lock.json && \
+    npm install
+
+# Copy the rest of your application code
+COPY . .
+
+# Declare Build Arguments
+ARG VITE_EXPRESS_JS_REST_API_URL
+ARG VITE_KC_ADMIN_CONSOLE_API_URL
+ARG VITE_KC_ADMIN_CONSOLE_PORT
+ARG VITE_KC_ADMIN_CONSOLE_REALM
+ARG VITE_KC_ADMIN_CONSOLE_CLIENT_ID
+
+# Set Environment Variables for the build step
+ENV VITE_EXPRESS_JS_REST_API_URL=$VITE_EXPRESS_JS_REST_API_URL
+ENV VITE_KC_ADMIN_CONSOLE_API_URL=$VITE_KC_ADMIN_CONSOLE_API_URL
+ENV VITE_KC_ADMIN_CONSOLE_PORT=$VITE_KC_ADMIN_CONSOLE_PORT
+ENV VITE_KC_ADMIN_CONSOLE_CLIENT_ID=$VITE_KC_ADMIN_CONSOLE_CLIENT_ID
+ENV VITE_KC_ADMIN_CONSOLE_REALM=$VITE_KC_ADMIN_CONSOLE_REALM
+
+# Run the build command (creates the /app/dist directory)
+RUN npm run build
+
+
+# ==========================================
+# STAGE 2: Serve the application with Nginx
+# ==========================================
+FROM ubuntu/nginx
+
+EXPOSE 80 443
+WORKDIR /app
+
+# Copy the compiled assets from the builder stage
+COPY --from=builder /app/dist /var/www/html
+
+# Install debugging/networking tools
+RUN apt-get update -y && \
+    apt-get install -y vim iputils-ping && \
+    rm -rf /var/lib/apt/lists/*
+
+# Clean up default Nginx configuration
+RUN rm -f /etc/nginx/sites-enabled/default
+
+# Copy your custom Nginx configurations
+COPY ./nginx/config/default /etc/nginx/sites-enabled/default
+COPY ./nginx/config/nginx.conf /etc/nginx/
