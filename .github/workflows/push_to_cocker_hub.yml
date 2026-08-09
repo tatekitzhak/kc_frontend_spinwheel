@@ -1,58 +1,114 @@
+# Build a Docker image and push it to a registry
 name: Push to Docker Hub
 
 on:
   push:
-    # branches: [ "main" ]
     branches:
       - main
   pull_request:
     branches:
       - main
 
+permissions:
+  id-token: write # Required for AWS OIDC
+  contents: read  # Required to checkout code
+  actions: read   # Required to read workflow/job artifacts
+
 jobs:
   call_time:
-    uses: ./.github/workflows/shared_time_utility.yml  
+    uses: ./.github/workflows/shared_time_utility.yml
+
+  fetch_aws_ec2_instance_id:
+    name: Extract EC2 instance ID from AWS
+    runs-on: ubuntu-latest
+
+    outputs:
+      EC2_INSTANCE_ID: ${{ steps.ec2_data.outputs.ec2_instance_id }}
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Fetch EC2 Information
+        id: ec2_data
+        run: |
+          INSTANCE_JSON=$(aws ec2 describe-instances \
+              --filters "Name=tag:Name,Values=${{ secrets.AWS_EC2_INSTANCE_NAME }}" \
+              --query "Reservations[*].Instances[*].InstanceId" \
+              --output text)
+
+          echo "ec2_instance_id=$INSTANCE_JSON" >> "$GITHUB_OUTPUT"
+          echo "Found Instance ID: $INSTANCE_JSON"
 
   build_and_push_to_docker_image:
-    needs: call_time
+    needs: 
+      - call_time
+      - fetch_aws_ec2_instance_id
     name: Push Docker image to Docker Hub
-    env:
-        GLOBAL_TIME: ${{ needs.call_time.outputs.formatted_time }}
     runs-on: ubuntu-latest
+
+    env:
+      GLOBAL_TIME: ${{ needs.call_time.outputs.formatted_time }}
+      EC2_INSTANCE_ID: ${{ needs.fetch_aws_ec2_instance_id.outputs.EC2_INSTANCE_ID }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fetch EC2 Public IP
+        id: fetch_ip
+        run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+
+          echo "PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_OUTPUT
+          echo "Fetched Public IP: $PUBLIC_IP"
 
       - name: Use Shared Time
         run: |
           echo "The time passed from the utility is: $GLOBAL_TIME"
 
       - name: Log in to Docker Hub 
-        uses: docker/login-action@v4
+        uses: docker/login-action@v3
         with: 
-          username: ${{secrets.DOCKER_USERNAME}}
-          password: ${{secrets.DOCKER_PASSWORD}}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
           
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v5
         with:
-          images: ${{secrets.DOCKER_USERNAME}}/${{secrets.FRONTEND_REPOSITORY_NAME}}
+          images: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.FRONTEND_REPOSITORY_NAME }}
 
-      - name: print ${{steps.meta.outputs.tags}}
-        run: echo "Build Docker- ${{toJSON(steps.meta)}}"
+      - name: Print Docker Metadata
+        run: echo "Build Docker- ${{ toJSON(steps.meta) }}"
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile.frontend.prod
           push: true
-          tags: ${{steps.meta.outputs.tags}}
-          labels: ${{steps.meta.outputs.labels}}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            VITE_EXPRESS_JS_REST_API_URL=${{ secrets.VITE_EXPRESS_JS_REST_API_URL }}
-            VITE_KC_ADMIN_CONSOLE_API_URL=${{ secrets.VITE_KC_ADMIN_CONSOLE_API_URL }}
+            VITE_EXPRESS_JS_REST_API_URL=${{ steps.fetch_ip.outputs.PUBLIC_IP }}
+            VITE_KC_ADMIN_CONSOLE_API_URL=${{ steps.fetch_ip.outputs.PUBLIC_IP }}
             VITE_KC_ADMIN_CONSOLE_PORT=${{ secrets.VITE_KC_ADMIN_CONSOLE_PORT }}
             VITE_KC_ADMIN_CONSOLE_REAL_NAME=${{ secrets.VITE_KC_ADMIN_CONSOLE_REAL_NAME }}
             VITE_KC_ADMIN_CONSOLE_CLIENT_ID=${{ secrets.VITE_KC_ADMIN_CONSOLE_CLIENT_ID }}
