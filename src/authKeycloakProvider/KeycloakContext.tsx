@@ -24,13 +24,14 @@ const KeycloakProvider = ({ children }: KeycloakProviderProps) => {
 
     const KC_API_URL = import.meta.env.VITE_KC_ADMIN_CONSOLE_API_URL || 'localhost';
     const KC_PORT = import.meta.env.VITE_KC_ADMIN_CONSOLE_PORT || '8443';
-    const KC_REALM = import.meta.env.VITE_KC_ADMIN_CONSOLE_REALM || '';
+    const KC_REALM = import.meta.env.VITE_KC_ADMIN_CONSOLE_REALM_NAME || '';
     const KC_CLIENT_ID = import.meta.env.VITE_KC_ADMIN_CONSOLE_CLIENT_ID || '';
 
     const KEYCLOAK_API_ENDPOINT = `https://${KC_API_URL}:${KC_PORT}/`;
 
 
     console.log("KC_CLIENT_ID:", KC_CLIENT_ID)
+    console.log("KC_REALM:", KC_REALM)
     console.log("KEYCLOAK_API_ENDPOINT:", KEYCLOAK_API_ENDPOINT)
     console.log("KeycloakProvider1:", isInitialized)
 
